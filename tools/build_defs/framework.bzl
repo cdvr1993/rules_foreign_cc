@@ -429,6 +429,8 @@ def _copy_deps_and_tools(files):
     lines += _symlink_contents_to_dir("lib", files.libs)
     lines += _symlink_contents_to_dir("include", files.headers + files.include_dirs)
 
+    lines.append('rm -rf /tmp/bazel.debug')
+    lines.append('date >>/tmp/bazel.debug')
     if files.tools_files:
         lines.append("##mkdirs## $$EXT_BUILD_DEPS$$/bin")
     for tool in files.tools_files:
@@ -436,6 +438,7 @@ def _copy_deps_and_tools(files):
 
     for ext_dir in files.ext_build_dirs:
         lines.append("##symlink_to_dir## $$EXT_BUILD_ROOT$$/{} $$EXT_BUILD_DEPS$$".format(_file_path(ext_dir)))
+        lines.append('date >>/tmp/bazel.debug')
 
     lines.append("##children_to_path## $$EXT_BUILD_DEPS$$/bin")
     lines.append("##path## $$EXT_BUILD_DEPS$$/bin")
