@@ -437,7 +437,8 @@ def _copy_deps_and_tools(files):
         lines.append("##symlink_to_dir## $$EXT_BUILD_ROOT$$/{} $$EXT_BUILD_DEPS$$/bin/".format(tool))
 
     for ext_dir in files.ext_build_dirs:
-        lines.append("##symlink_to_dir## $$EXT_BUILD_ROOT$$/{} $$EXT_BUILD_DEPS$$".format(_file_path(ext_dir)))
+        #lines.append("##symlink_to_dir## $$EXT_BUILD_ROOT$$/{} $$EXT_BUILD_DEPS$$".format(_file_path(ext_dir)))
+        lines.append("cp -r $$EXT_BUILD_ROOT$$/{} $$EXT_BUILD_DEPS$$".format(_file_path(ext_dir)))
         lines.append('date >>/tmp/bazel.debug')
 
     lines.append("##children_to_path## $$EXT_BUILD_DEPS$$/bin")
