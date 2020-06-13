@@ -125,6 +125,7 @@ If file is passed, symlink it into the target directory.""",
                 doc = "Source directory",
             ),
             ArgumentInfo(name = "target", type_ = type(""), doc = "Target directory"),
+            ArgumentInfo(name = "fast_version", type_ = type(""), doc = "use symlink fast version"),
         ],
         doc = """
 Symlink all files from source directory to target directory (create the target directory if needed).

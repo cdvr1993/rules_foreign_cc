@@ -67,20 +67,23 @@ def symlink_contents_to_dir(source, target):
     text = """local target="$2"
 mkdir -p "$target"
 if [[ -f "$1" ]]; then
-  ##symlink_to_dir## "$1" "$target"
+  ##symlink_to_dir## "$1" "$target" ""
 elif [[ -L "$1" ]]; then
   local actual=$(readlink "$1")
   ##symlink_contents_to_dir## "$actual" "$target"
 elif [[ -d "$1" ]]; then
   local children=$(find -H "$1" -maxdepth 1 -mindepth 1)
   for child in $children; do
-    ##symlink_to_dir## "$child" "$target"
+    ##symlink_to_dir## "$child" "$target" ""
   done
 fi
 """
     return FunctionAndCall(text = text)
 
-def symlink_to_dir(source, target):
+def symlink_to_dir(source, target, fast_version):
+    if fast_version:
+        return symlink_to_dir_fast(source, target)
+
     text = """local target="$2"
 mkdir -p "$target"
 if [[ -f "$1" ]]; then
@@ -92,11 +95,54 @@ elif [[ -d "$1" ]]; then
   local dirname=$(basename "$1")
   mkdir -p "$target/$dirname"
   for child in $children; do
-    ##symlink_to_dir## "$child" "$target/$dirname"
+    ##symlink_to_dir## "$child" "$target/$dirname" ""
   done
 else
   echo "Can not copy $1"
 fi
+"""
+    return FunctionAndCall(text = text)
+
+def symlink_to_dir_fast(source, target):
+    text = """
+local source="$1"
+local target="$2"
+mkdir -p "$target"
+time python -c "
+# !/usr/bin/python
+
+import os
+
+print('Start copy from {} to {}'.format('$source', '$target'))
+
+def process(source_dir, target_dir, name, is_directory):
+\tfull_name = os.path.join(source_dir, name)
+\tfull_target = os.path.join(target_dir, name)
+\tif os.path.islink(full_name):
+\t\tlinkto = os.readlink(full_name)
+\t\ttry:
+\t\t\tos.symlink(linkto, full_target)
+\t\texcept Exception as exc:
+\t\t\tprint('got error copying symlink: {} -> {}, got link as {}, error {}'.format(full_name, full_target, linkto, exc))
+\t\treturn
+\tif is_directory:
+\t\ttry:
+\t\t\tos.mkdir(full_target)
+\t\texcept Exception as exc:
+	\t\t\tprint('got error copying directory: {} -> {}, got error: {}'.format(full_name, full_target, exc))
+\telse:
+\t\ttry:
+\t\t\tos.symlink(full_name, full_target)
+\t\texcept Exception as exc:
+	\t\t\tprint('got error copying file: {} -> {}, got error: {}'.format(full_name, full_target, exc))
+
+for root, dirs, files in os.walk('$source'):
+\ttarget_dir = root.replace('$source', '$target')
+\tfor name in dirs:
+\t\tprocess(root, target_dir, name, True)
+\tfor name in files:
+\t\tprocess(root, target_dir, name, False)
+"
 """
     return FunctionAndCall(text = text)
 
